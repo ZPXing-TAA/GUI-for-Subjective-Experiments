@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import shutil
-import subprocess
-import sys
 import threading
 import tkinter as tk
 from pathlib import Path
@@ -12,113 +9,44 @@ from subjective_experiment.experiment_controller import run_subjective_experimen
 from subjective_experiment.trial_player import TrialPlayer, TrialPrompt
 
 
-class ExternalVideoPlayer:
-    """Launches local video files in an external player process (blocking)."""
-
-    def __init__(self) -> None:
-        self._backend_name, self._player_cmd = self._detect_player()
-
-    @staticmethod
-    def _detect_player() -> tuple[str, list[str] | None]:
-        candidates = [
-            ("ffplay", ["ffplay", "-autoexit", "-loglevel", "quiet"]),
-            ("mpv", ["mpv", "--really-quiet", "--force-window=yes", "--no-terminal"]),
-            ("vlc", ["vlc", "--play-and-exit", "--quiet"]),
-        ]
-        for name, cmd in candidates:
-            if shutil.which(cmd[0]):
-                return name, cmd
-
-        if sys.platform == "darwin" and shutil.which("open"):
-            # Native macOS fallback: open in QuickTime and wait until the app exits.
-            return "macos-open", ["open", "-W", "-a", "QuickTime Player"]
-
-        return "none", None
-
-    @property
-    def available(self) -> bool:
-        return self._player_cmd is not None
-
-    @property
-    def player_name(self) -> str:
-        return self._backend_name
-
-    def play_blocking(self, video_path: Path) -> None:
-        if self._player_cmd is None:
-            raise RuntimeError(
-                "No supported video player found. Install one of: ffplay, mpv, vlc "
-                "(or use macOS QuickTime via `open`)."
-            )
-
-        cmd = [*self._player_cmd, str(video_path)]
-        subprocess.run(cmd, check=True)
-
-
 class TkTrialPlayer(TrialPlayer):
     def __init__(self, root: tk.Tk, status_var: tk.StringVar) -> None:
         self.root = root
         self.status_var = status_var
         self.response_var = tk.StringVar(value="")
         self.current_prompt: TrialPrompt | None = None
-        self.video_player = ExternalVideoPlayer()
 
         self.phase_var = tk.StringVar(value="Phase: -")
         self.order_var = tk.StringVar(value="Order: -")
         self.reference_var = tk.StringVar(value="Reference: -")
         self.candidate_var = tk.StringVar(value="Candidate: -")
-        self.player_var = tk.StringVar(value=f"Video backend: {self.video_player.player_name}")
 
     def bind_widgets(self, frame: ttk.Frame) -> None:
         ttk.Label(frame, textvariable=self.phase_var).grid(row=0, column=0, sticky="w")
         ttk.Label(frame, textvariable=self.order_var).grid(row=1, column=0, sticky="w")
         ttk.Label(frame, textvariable=self.reference_var, wraplength=760).grid(row=2, column=0, sticky="w")
         ttk.Label(frame, textvariable=self.candidate_var, wraplength=760).grid(row=3, column=0, sticky="w")
-        ttk.Label(frame, textvariable=self.player_var).grid(row=4, column=0, sticky="w")
-
-        ttk.Label(
-            frame,
-            text=(
-                "On each trial, videos are opened and played sequentially (Clip A then Clip B). "
-                "Close each player window after playback if needed, then answer."
-            ),
-            wraplength=760,
-        ).grid(row=5, column=0, sticky="w", pady=(6, 0))
 
         btns = ttk.Frame(frame)
-        btns.grid(row=6, column=0, pady=10, sticky="w")
+        btns.grid(row=4, column=0, pady=10, sticky="w")
         ttk.Button(btns, text="No noticeable difference (Same)", command=lambda: self._set_response("Same")).grid(row=0, column=0, padx=4)
         ttk.Button(btns, text="Visible difference (Different)", command=lambda: self._set_response("Different")).grid(row=0, column=1, padx=4)
 
     def _set_response(self, val: str) -> None:
         self.response_var.set(val)
 
-    def _play_trial_videos(self, prompt: TrialPrompt) -> None:
-        if prompt.presentation_order == "reference_first":
-            first_path, second_path = prompt.reference_path, prompt.candidate_path
-        else:
-            first_path, second_path = prompt.candidate_path, prompt.reference_path
-
-        self.reference_var.set(f"Clip A: {first_path}")
-        self.candidate_var.set(f"Clip B: {second_path}")
-        self.status_var.set("Playing Clip A...")
-        self.video_player.play_blocking(first_path)
-
-        self.status_var.set("Playing Clip B...")
-        self.video_player.play_blocking(second_path)
-        self.status_var.set("Playback done. Respond with Same or Different...")
-
     def play_trial(self, prompt: TrialPrompt) -> str:
         self.current_prompt = prompt
         self.phase_var.set(f"Phase: {prompt.phase} | {prompt.label}")
         self.order_var.set(f"Presentation Order: {prompt.presentation_order}")
+        if prompt.presentation_order == "reference_first":
+            left, right = prompt.reference_path, prompt.candidate_path
+        else:
+            left, right = prompt.candidate_path, prompt.reference_path
 
-        if not self.video_player.available:
-            raise RuntimeError(
-                "No video player backend detected. Install ffplay/mpv/vlc, "
-                "or on macOS use QuickTime Player."
-            )
-
-        self._play_trial_videos(prompt)
+        self.reference_var.set(f"Clip A: {left}")
+        self.candidate_var.set(f"Clip B: {right}")
+        self.status_var.set("Respond with Same or Different to continue...")
 
         self.response_var.set("")
         self.root.wait_variable(self.response_var)
@@ -131,7 +59,7 @@ class SubjectiveExperimentApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("Subjective Experiment GUI")
-        self.root.geometry("900x560")
+        self.root.geometry("900x500")
 
         self.subject_id = tk.StringVar()
         self.scene_folder = tk.StringVar()

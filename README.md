@@ -20,9 +20,6 @@ python -m pytest -q
 
 ## Notes
 
-- GUI is implemented with Tkinter to keep it Python-first.
-- For each trial, the two compared videos are played **sequentially** (`Clip A` then `Clip B`) before response collection.
-- Playback backend is auto-detected:
-  - `ffplay`, `mpv`, or `vlc` if installed
-  - macOS fallback: `open -W -a "QuickTime Player"`
+- GUI is implemented with Tkinter to keep it Python-only.
+- Trial screen currently shows randomized presentation order and clip paths; response buttons collect `Same` / `Different`.
 - Outputs are saved under: `Results/{subject_id}/{device}/{action_type}/{scene_id}/`.
