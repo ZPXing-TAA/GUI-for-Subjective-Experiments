@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JND Subjective Experiment GUI</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>JND Subjective Experiment GUI</h1>
+      <p>Load videos, run training, Phase 1 FPS search, and Phase 2 graphics reduction.</p>
+    </header>
+
+    <main>
+      <section class="card">
+        <h2>1) Session Setup</h2>
+        <div class="grid">
+          <label>Subject ID <input id="subjectId" placeholder="S01" /></label>
+          <label>Device <input id="device" placeholder="huaweimate" /></label>
+          <label>Action Type
+            <select id="actionType">
+              <option>move</option><option>run</option><option>climb</option><option>swim</option><option>glide</option><option>combat</option>
+            </select>
+          </label>
+          <label>Scene ID <input id="sceneId" placeholder="natlan_1_h1" /></label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>2) Load Recordings</h2>
+        <p>Select all .mp4 files for a single experiment unit. Legacy 5-token and canonical 4-token names are supported.</p>
+        <input id="videoInput" type="file" accept="video/mp4" multiple />
+        <div class="actions">
+          <button id="parseBtn">Parse Videos</button>
+          <button id="startBtn" disabled>Start Training</button>
+        </div>
+        <pre id="parseSummary" class="output"></pre>
+      </section>
+
+      <section class="card">
+        <h2>3) Trial Panel</h2>
+        <div id="trialMeta" class="meta">No trial started.</div>
+        <div class="video-grid">
+          <div>
+            <h3 id="leftTitle">Left</h3>
+            <video id="leftVideo" controls></video>
+          </div>
+          <div>
+            <h3 id="rightTitle">Right</h3>
+            <video id="rightVideo" controls></video>
+          </div>
+        </div>
+        <div class="actions">
+          <button id="sameBtn" disabled>Same</button>
+          <button id="differentBtn" disabled>Different</button>
+          <button id="skipBtn" disabled>Skip (missing file)</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>4) Results & Export</h2>
+        <div class="actions">
+          <button id="downloadRaw" disabled>Download raw_trial_log.json</button>
+          <button id="downloadP1" disabled>Download phase1_result.json</button>
+          <button id="downloadP2" disabled>Download phase2_result.json</button>
+          <button id="downloadFinal" disabled>Download final_jnd_safe_set.json</button>
+        </div>
+        <pre id="resultView" class="output"></pre>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
